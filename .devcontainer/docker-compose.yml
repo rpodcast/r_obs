@@ -1,18 +1,48 @@
 version: '3.4'
 
 services:
+  vscode:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        USERNAME: "eric"
+    user: eric
+    volumes:
+      - ..:/workspace:cached
+      - /opt/local/renv/cache:/renv/cache
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - seccomp:unconfined
+    
+    command: sleep infinity
+  
   rstudiopreview:
     build:
       context: ./rstudio_docker
     container_name: ${CONTAINER_NAME}
     volumes:
-      - ${VOLUME_PATH}:${VOLUME_PATH}
+      - /home/eric/shinydevseries_projects:/home/eric/shinydevseries_projects
       - /home/${USER}/.ssh:/home/${USER}/.ssh
       - ${RENV_PATHS_CACHE_HOST}:${RENV_PATHS_CACHE_CONTAINER}
       - ${VOLUME_PATH}/.devcontainer/rstudio_config_dir:/home/${USER}/.config/rstudio
     restart:
       unless-stopped
     ports:
-      - ${LOCAL_PORT}:8787
-    env_file: .env
+      - 6222:8787
+      
+  obswebsocket:
+    build:
+      context: ./obs-websocket-http
+    restart: unless-stopped
+    environment:
+      - API_ADDRESS=0.0.0.0   # Address of this machine
+      - API_PORT=4445           # Port you wish to use for API
+      - API_KEY=                # Auth key you wish to set
+      - OBS_ADDRESS=192.168.1.178   # IP of machine running OBS Studio
+      - OBS_PORT=4444           # OBS port
+      - OBS_PASSWORD=           # OBS password, if used
+    ports:
+      - "4445:4445"             # Set to same value as API_PORT
 
